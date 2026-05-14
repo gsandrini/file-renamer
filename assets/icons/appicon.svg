@@ -1,0 +1,13 @@
+<svg width="690" height="690" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>File Rename</title>
+  <rect x="0" y="0" width="680" height="680" rx="120" fill="#4a4a4a"/>
+  <path d="M 185,560 L 185,160 L 415,160 L 495,240 L 495,560 Z"
+    fill="none" stroke="#f0ece3" stroke-width="38" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="415,160 415,240 495,240"
+    fill="none" stroke="#f0ece3" stroke-width="38" stroke-linejoin="round" stroke-linecap="round"/>
+  <text
+    x="325" y="450"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="230" font-weight="800"
+    fill="#f0ece3" text-anchor="middle">R</text>
+</svg>
