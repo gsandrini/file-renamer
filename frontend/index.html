@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Renamer</title>
+  <link rel="stylesheet" href="assets/css/tailwind.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script defer src="assets/js/alpine.min.js"></script>
+</head>
+
+<body x-data="FileRenamer()" x-cloak class="font-mono text-[13px] min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <div class="titlebar flex items-center justify-between px-5 py-3">
+    <div class="flex items-center gap-2">      
+      <span class="font-semibold tracking-tight" x-text="t.title"></span>
+    </div>
+    <button @click="toggleLang()" class="btn-secondary text-[11px] px-2.5 py-1 rounded-md"
+      x-text="lang === 'it' ? 'EN' : 'IT'"></button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-1 flex flex-col px-5 py-4 gap-3 max-w-3xl w-full mx-auto">
+
+    <!-- Directory selector row -->
+    <div class="flex items-center gap-2">
+      <button @click="selectDir()" class="btn-secondary flex-shrink-0">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+        </svg>
+        <span x-text="t.selectDir"></span>
+      </button>
+
+      <!-- Selected path display -->
+      <div class="flex-1 min-w-0">
+        <template x-if="selectedDir">
+          <div class="flex items-center gap-2 card px-3 py-1.5">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+              style="color:var(--color-accent);flex-shrink:0">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <span class="text-[11px] truncate" style="color:var(--color-muted)" x-text="selectedDir"></span>
+          </div>
+        </template>
+        <template x-if="!selectedDir">
+          <span class="text-[11px]" style="color:var(--color-muted)" x-text="t.noDir"></span>
+        </template>
+      </div>
+    </div>
+
+    <!-- Options row: style selector -->
+    <div class="flex items-center gap-4 flex-wrap">    
+      <!-- Style toggle group -->
+      <div class="flex items-center gap-2 ml-auto">
+        <span class="label" x-text="t.styleLabel"></span>
+        <div class="style-group">
+          <template x-for="s in ['kebab','snake','camel']" :key="s">
+            <button class="style-btn" :class="{ active: style === s }" @click="style = s; resetPreview()"
+              x-text="t.styles[s]">
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style hint -->
+    <div class="text-[10px] -mt-1" style="color:var(--color-muted);font-style:italic" x-text="t.styleHint[style]"></div>
+
+    <!-- Tab bar -->
+    <div class="flex border-b" style="border-color:var(--color-border)">
+      <button class="tab-btn" :class="{ active: tab === 'browse' }" @click="tab = 'browse'"
+        x-text="t.tabBrowse"></button>
+      <button class="tab-btn" :class="{ active: tab === 'preview' }" @click="tab = 'preview'">
+        <span x-text="t.tabPreview"></span>
+        <template x-if="previewEntries.length > 0">
+          <span class="badge ml-1.5" x-text="previewEntries.length"></span>
+        </template>
+      </button>
+    </div>
+
+    <!-- BROWSE TAB -->
+    <div x-show="tab === 'browse'" class="flex-1 flex flex-col gap-2">
+
+      <template x-if="!selectedDir">
+        <div class="flex-1 flex items-center justify-center py-12" style="color:var(--color-muted)">
+          <div class="text-center">
+            <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"
+              class="mx-auto mb-3" style="opacity:0.3">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <p class="text-[11px]" x-text="t.browseHint"></p>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="selectedDir && browseEntries.length === 0">
+        <div class="flex items-center justify-center py-8" style="color:var(--color-muted)">
+          <span class="text-[11px]" x-text="t.emptyDir"></span>
+        </div>
+      </template>
+
+      <template x-if="selectedDir && browseEntries.length > 0">
+        <div class="card scroll-area flex-1" style="max-height:320px">
+          <div class="p-2">
+            <template x-for="entry in browseEntries" :key="entry.name">
+              <div class="tree-item" :class="entry.isDir ? 'is-dir' : ''">
+                <!-- Dir icon -->
+                <template x-if="entry.isDir">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                    style="flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                  </svg>
+                </template>
+                <!-- File icon -->
+                <template x-if="!entry.isDir">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                    style="flex-shrink:0;opacity:0.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M7 3h7l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4h4" />
+                  </svg>
+                </template>
+                <span x-text="entry.name"></span>
+                <template x-if="entry.isDir">
+                  <span class="badge ml-auto" x-text="t.dirLabel"></span>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+    </div>
+
+    <!-- PREVIEW TAB -->
+    <div x-show="tab === 'preview'" class="flex-1 flex flex-col gap-2">
+
+      <template x-if="previewEntries.length === 0 && !result">
+        <div class="flex-1 flex items-center justify-center py-12" style="color:var(--color-muted)">
+          <div class="text-center">
+            <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"
+              class="mx-auto mb-3" style="opacity:0.3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+                   M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <p class="text-[11px]" x-text="t.previewHint"></p>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="previewEntries.length > 0">
+        <div>
+          <!-- Header row -->
+          <div class="flex items-center justify-between mb-1.5 px-0.5">
+            <span class="label" x-text="t.previewTitle"></span>
+            <span class="badge" x-text="t.countItems(previewEntries.length)"></span>
+          </div>
+
+          <!-- Entries list -->
+          <div class="card scroll-area" style="max-height:280px">
+            <div class="p-2">
+              <template x-for="(entry, idx) in previewEntries" :key="idx">
+                <div class="rename-row" :class="entry.isDir ? 'is-dir' : 'is-file'">
+                  <!-- Old name -->
+                  <div class="rename-old flex items-center gap-1.5 min-w-0">
+                    <template x-if="entry.isDir">
+                      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        style="flex-shrink:0">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                      </svg>
+                    </template>
+                    <template x-if="!entry.isDir">
+                      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        style="flex-shrink:0">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M7 3h7l4 4v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4h4" />
+                      </svg>
+                    </template>
+                    <span x-text="entry.oldRelative" class="truncate"></span>
+                  </div>
+                  <!-- Arrow -->
+                  <div class="rename-arrow flex-shrink-0">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                  <!-- New name -->
+                  <div class="rename-new flex items-center gap-1.5 min-w-0">
+                    <span x-text="entry.newRelative" class="truncate"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </div>
+
+    <!-- ACTION BAR -->
+    <div class="flex items-center gap-2 pt-1">
+      <!-- Dry-run -->
+      <button @click="dryRun()" :disabled="!selectedDir || loading || loadingApply"
+        :style="(!selectedDir || loading || loadingApply) ? 'opacity:0.4;cursor:not-allowed' : ''"
+        class="btn-secondary flex-1">
+        <svg x-show="loading" class="spinner w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M12 2a10 10 0 0 1 10 10" />
+        </svg>
+        <svg x-show="!loading" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+               M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span x-text="loading ? t.running : t.btnDryRun"></span>
+      </button>
+
+      <!-- Apply -->
+      <button @click="applyRename()" :disabled="!selectedDir || previewEntries.length === 0 || loading || loadingApply"
+        :style="(!selectedDir || previewEntries.length === 0 || loading || loadingApply) ? 'opacity:0.4;cursor:not-allowed' : ''"
+        class="btn-success flex-1">
+        <svg x-show="loadingApply" class="spinner w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M12 2a10 10 0 0 1 10 10" />
+        </svg>
+        <svg x-show="!loadingApply" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span x-text="loadingApply ? t.applying : t.btnApply"></span>
+      </button>
+    </div>
+
+    <!-- Result message -->
+    <div x-show="result !== null" x-cloak class="fade-in">
+      <div :class="result?.success ? 'alert-result is-success' : 'alert-result is-error'">
+        <svg x-show="result?.success" class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <svg x-show="!result?.success" class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+          stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span x-text="result?.message"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="divider py-3 flex items-center justify-center text-[11px] mt-auto">
+    <span style="opacity:0.7;color:var(--color-muted)" x-text="t.madeWith"></span>
+    <a href="https://claude.ai" target="_blank" rel="noopener" class="footer-link ml-1">Claude</a>
+    <span style="opacity:0.7;color:var(--color-muted)" class="ml-1">(Anthropic)</span>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+
+</html>
