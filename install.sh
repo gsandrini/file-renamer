@@ -44,19 +44,8 @@ case "$ARCH" in
     ;;
 esac
 
-# Fetch the latest available version
-LATEST_VERSION=$(curl -fsSL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" \
-    | grep '"tag_name"' \
-    | sed -E 's/.*"([^"]+)".*/\1/')
-
-if [ -z "$LATEST_VERSION" ]; then
-    echo -e "${RED}Error: could not determine latest version.${NC}"
-    exit 1
-fi
-
-echo -e "Latest version: ${BLUE}${LATEST_VERSION}${NC}"
-
-BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/${LATEST_VERSION}"
+BASE_URL="https://github.com/${GITHUB_REPO}/releases/latest/download"
+LATEST_VERSION="latest"
 
 # Create required directories
 mkdir -p "$INSTALL_DIR"
@@ -101,7 +90,7 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 fi
 
 echo ""
-echo -e "${GREEN}✓ ${APP_NAME} ${LATEST_VERSION} installed successfully!${NC}"
+echo -e "${GREEN}✓ ${APP_NAME} installed successfully!${NC}"
 echo -e "  Executable : ${INSTALL_DIR}/${APP_NAME}"
 echo -e "  Icon       : ${ICON_DIR}/${APP_NAME}.png"
 echo -e "  Desktop    : ${DESKTOP_DIR}/${APP_NAME}.desktop"
