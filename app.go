@@ -16,6 +16,7 @@ import (
 type App struct {
 	ctx  context.Context
 	lang string
+	lastDir string
 }
 
 var translations = map[string]map[string]string{
@@ -80,10 +81,12 @@ func (a *App) t(key string) string {
 func (a *App) SelectDirectory() string {
 	dir, err := wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{
 		Title: "Seleziona directory",
+		DefaultDirectory: a.lastDir,
 	})
 	if err != nil || dir == "" {
 		return ""
 	}
+    a.lastDir = dir
 	return dir
 }
 
