@@ -80,7 +80,7 @@ function FileRenamer() {
         // State
         tab: 'browse',          // 'browse' | 'preview'
         selectedDir: '',
-        style: 'kebab',         // 'kebab' | 'snake' | 'camel'
+        style: 'snake',         // 'kebab' | 'snake' | 'camel'
         loading: false,
         loadingApply: false,
         browseEntries: [],      // {name, isDir}
